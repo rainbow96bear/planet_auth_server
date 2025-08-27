@@ -26,7 +26,7 @@ func logMessage(level int16, prefix string, msg string, a ...interface{}) {
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	formattedMsg := fmt.Sprintf(msg, a...)
-	_, file, _, ok := runtime.Caller(2)
+	_, file, line, ok := runtime.Caller(2)
 	if !ok {
 		file = "???"
 	}
@@ -46,7 +46,7 @@ func logMessage(level int16, prefix string, msg string, a ...interface{}) {
 		color = "\033[31m" // 빨강색
 	}
 
-	fmt.Printf("%s%s [%s] [%s] %s%s\n", color, timestamp, prefix, fileName, formattedMsg, reset)
+	fmt.Printf("%s%s [%s] [%s:%d] %s%s\n", color, timestamp, prefix, fileName, line, formattedMsg, reset)
 
 }
 

@@ -6,14 +6,8 @@ import (
 	"strconv"
 
 	"github.com/joho/godotenv"
+	"github.com/rainbow96bear/planet_auth_server/logger"
 )
-
-type AppConfigStruct struct {
-	Port     int
-	LogLevel int16
-}
-
-var AppConfig AppConfigStruct
 
 func InitConfig(mode string) {
 	var err error
@@ -29,24 +23,36 @@ func InitConfig(mode string) {
 		fmt.Println("[CONFIG] fail to load .env file, 기본값 dev 사용")
 	}
 
-	if portStr := os.Getenv("PORT"); portStr != "" {
-		if AppConfig.Port, err = strconv.Atoi(portStr); err != nil {
-			fmt.Println("fail to set port")
-			os.Exit(1)
-		}
-	} else {
-		os.Exit(1)
-	}
+	// default config
+	PORT = getString("PORT")
+	LOG_LEVEL = getInt16("LOG_LEVEL")
+	DB_SERVER_ADDR = getString("DB_SERVER_ADDR")
+	DB_GRPC_SERVER_ADDR = getString("DB_GRPC_SERVER_ADDR")
+	// kakao config
+	KAKAO_REST_API_KEY = getString("KAKAO_REST_API_KEY")
+	KAKAO_REDIRECT_URI = getString("KAKAO_REDIRECT_URI")
+	KAKAO_CLIENT_SECRET = getString("KAKAO_CLIENT_SECRET")
+}
 
-	if logLevelStr := os.Getenv("LOG_LEVEL"); logLevelStr != "" {
-		if logLevel, err := strconv.Atoi(logLevelStr); err == nil {
-			AppConfig.LogLevel = int16(logLevel)
-		} else {
-			fmt.Println("fail to set log level")
-			AppConfig.LogLevel = 1
-		}
-	} else {
+func getString(envName string) string {
+	v := os.Getenv(envName)
+	if v == "" {
+		logger.Errorf("[CONFIG] %s not set\n", envName)
 		os.Exit(1)
 	}
-	fmt.Printf("Success to set AppConfig : %+v\n", AppConfig)
+	return v
+}
+
+func getInt16(envName string) int16 {
+	v := os.Getenv(envName)
+	if v == "" {
+		logger.Errorf("[CONFIG] %s not set\n", envName)
+		os.Exit(1)
+	}
+	num, err := strconv.Atoi(v)
+	if err != nil {
+		logger.Errorf("[CONFIG] %s must be int, got %s\n", envName, v)
+		os.Exit(1)
+	}
+	return int16(num)
 }
