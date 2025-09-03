@@ -28,10 +28,15 @@ func InitConfig(mode string) {
 	LOG_LEVEL = getInt16("LOG_LEVEL")
 	DB_SERVER_ADDR = getString("DB_SERVER_ADDR")
 	DB_GRPC_SERVER_ADDR = getString("DB_GRPC_SERVER_ADDR")
+	ACCESS_TOKEN_EXPIRY_MINUTE = getInt16("ACCESS_TOKEN_EXPIRY_MINUTE")
 	// kakao config
 	KAKAO_REST_API_KEY = getString("KAKAO_REST_API_KEY")
 	KAKAO_REDIRECT_URI = getString("KAKAO_REDIRECT_URI")
 	KAKAO_CLIENT_SECRET = getString("KAKAO_CLIENT_SECRET")
+
+	// jwt key
+	JWT_SECRET_KEY = getString("JWT_SECRET_KEY")
+	PLANET_CLIENT_ADDR = getString("PLANET_CLIENT_ADDR")
 }
 
 func getString(envName string) string {

@@ -8,6 +8,6 @@ import (
 func RegisterKakaoOauthRoutes(r *gin.Engine, provider *kakao.Provider) {
 
 	oauthGroup := r.Group("/oauth/kakao")
-	oauthGroup.GET("/logout", provider.Logout)
-	oauthGroup.GET("/token", provider.GetUserInfo)
+	oauthGroup.GET("/signup", provider.Signup)
+	oauthGroup.POST("/logout", provider.Logout)
 }

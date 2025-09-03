@@ -11,6 +11,7 @@ import (
 	"github.com/rainbow96bear/planet_auth_server/config"
 	"github.com/rainbow96bear/planet_auth_server/grpc_client"
 	"github.com/rainbow96bear/planet_auth_server/logger"
+	"github.com/rainbow96bear/planet_auth_server/oauth/token"
 	pb "github.com/rainbow96bear/planet_proto"
 )
 
@@ -60,44 +61,9 @@ type KakaoProperty struct {
 	ThumbnailImage string `json:"thumbnail_image"`
 }
 
-func (k *Provider) Logout(c *gin.Context) {
-	// logger.Infof("start kakao logout")
-	// defer logger.Infof("end kakao logout")
-	// accessToken := k.AccessToken[userId] // 실제 발급받은 Access Token으로 교체
-
-	// req, err := http.NewRequest(
-	// 	http.MethodPost,
-	// 	"https://kapi.kakao.com/v1/user/logout",
-	// 	nil,
-	// )
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create request"})
-	// 	return
-	// }
-
-	// req.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
-	// req.Header.Set("Authorization", "Bearer "+accessToken)
-
-	// client := &http.Client{}
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to request logout"})
-	// 	return
-	// }
-	// defer resp.Body.Close()
-
-	// var result map[string]interface{}
-	// if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse logout response"})
-	// 	return
-	// }
-
-	// c.JSON(http.StatusOK, result)
-}
-
-func (k *Provider) GetUserInfo(c *gin.Context) {
-	logger.Infof("start get kakao user info")
-	defer logger.Infof("end get kakao user info")
+func (k *Provider) Signup(c *gin.Context) {
+	logger.Infof("start get kakao signup")
+	defer logger.Infof("end get kakao signup")
 
 	code := c.Query("code")
 	logger.Debugf("authorize code : %+v", code)
@@ -177,10 +143,109 @@ func (k *Provider) GetUserInfo(c *gin.Context) {
 	dbReq := grpc_client.NewDBClient(config.DB_GRPC_SERVER_ADDR)
 	logger.Debugf("send to db server about user info : %+v", newUserInfo)
 
-	_, err = grpc_client.ReqOauthSignUp(dbReq, newUserInfo)
+	responseSignup, err := grpc_client.ReqOauthSignUp(dbReq, newUserInfo)
 	if err != nil {
 		logger.Warnf("failed to oauth sign up Error : %+v", err)
 	}
 
-	c.JSON(http.StatusOK, userInfoResult)
+	accessToken, err := token.CreateAccessToken(responseSignup.UserInfo.Id)
+	if err != nil {
+
+	}
+
+	refreshToken, err := token.CreateRefreshToken()
+	if err != nil {
+
+	}
+	// TODO : return 정의
+
+	reqRefreshToken := &pb.Token{
+		UserId: responseSignup.UserInfo.Id,
+		Token:  refreshToken,
+		Expiry: time.Now().Add(3 * 24 * time.Hour).Unix(),
+	}
+	logger.Debugf("reqRefreshToken value : %+v", reqRefreshToken)
+	_, err = grpc_client.ReqRefreshToken(dbReq, reqRefreshToken)
+	if err != nil {
+		logger.Warnf("failed to refresh Token : %+v", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"expires_in":    900,
+	})
+
+	redirectUrl := fmt.Sprintf("%s/login/callback", config.PLANET_CLIENT_ADDR)
+	c.Redirect(http.StatusFound, redirectUrl)
+}
+
+func (k *Provider) Logout(c *gin.Context) {
+	logger.Infof("start kakao logout")
+	defer logger.Infof("end kakao logout")
+
+	var req token.DeleteTokenRequest
+
+	// JSON 바디 파싱
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warnf("failed to parsing to JSON req : %+v", req)
+		return
+	}
+
+	// 값 검증
+	if req.UserID == 0 || req.Token == "" {
+		logger.Warnf("user id or token is wrong userid : %v, token : %v", req.UserID, req.Token)
+		return
+	}
+
+	if err := token.DeleteRefreshToken(req.UserID, req.Token); err != nil {
+		logger.Warnf("failed to delete refresh token")
+	}
+
+	// TODO : redirect to home
+	// TODO : refresh token에 따라 어떤 응답을 전달할지
+}
+
+func (k *Provider) RefreshToken(refreshToken string) (*pb.RefreshTokenResponse, error) {
+	logger.Infof("start refresh token")
+	defer logger.Infof("end refresh token")
+
+	dbReq := grpc_client.NewDBClient(config.DB_GRPC_SERVER_ADDR)
+	logger.Debugf("request to db server for get user id : %+v", refreshToken)
+
+	reqRefreshToken := &pb.Token{
+		Token: refreshToken,
+	}
+
+	resRefreshTokenInfo, err := grpc_client.ReqGetRefreshTokenInfo(dbReq, reqRefreshToken)
+	if err != nil {
+		logger.Warnf("failed to oauth sign up Error : %+v", err)
+	}
+
+	accessTokenStr, err := token.CreateAccessToken(resRefreshTokenInfo.UserId)
+	if err != nil {
+		logger.Warnf("fail to create access token ERROR : %s", err.Error())
+		return nil, err
+	}
+
+	newRefreshTokenStr, err := token.CreateRefreshToken()
+	if err != nil {
+		logger.Warnf("fail to create refresh token ERROR : %s", err.Error())
+		return nil, err
+	}
+
+	resRefreshToken := &pb.RefreshTokenResponse{
+		AccessToken:  accessTokenStr,
+		RefreshToken: newRefreshTokenStr,
+		Expiry:       time.Now().Add(time.Duration(config.ACCESS_TOKEN_EXPIRY_MINUTE) * time.Minute).Unix(),
+	}
+
+	logger.Debugf("reqRefreshToken value : %+v", reqRefreshToken)
+	_, err = grpc_client.ReqRefreshToken(dbReq, reqRefreshToken)
+	if err != nil {
+		logger.Warnf("failed to refresh Token : %+v", err)
+		return nil, err
+	}
+
+	return resRefreshToken, nil
 }
