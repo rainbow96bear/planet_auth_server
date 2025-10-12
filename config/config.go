@@ -25,10 +25,14 @@ func InitConfig(mode string) {
 
 	// default config
 	PORT = getString("PORT")
+	GRPC_PORT = getString("GRPC_PORT")
 	LOG_LEVEL = getInt16("LOG_LEVEL")
 	DB_SERVER_ADDR = getString("DB_SERVER_ADDR")
 	DB_GRPC_SERVER_ADDR = getString("DB_GRPC_SERVER_ADDR")
 	ACCESS_TOKEN_EXPIRY_MINUTE = getInt16("ACCESS_TOKEN_EXPIRY_MINUTE")
+	REFRESH_TOKEN_NAME = getString("REFRESH_TOKEN_NAME")
+	REFRESH_TOKEN_EXPIRY_DURATION = getInt("REFRESH_TOKEN_EXPIRY_DURATION")
+
 	// kakao config
 	KAKAO_REST_API_KEY = getString("KAKAO_REST_API_KEY")
 	KAKAO_REDIRECT_URI = getString("KAKAO_REDIRECT_URI")
@@ -46,6 +50,20 @@ func getString(envName string) string {
 		os.Exit(1)
 	}
 	return v
+}
+
+func getInt(envName string) int {
+	v := os.Getenv(envName)
+	if v == "" {
+		logger.Errorf("[CONFIG] %s not set\n", envName)
+		os.Exit(1)
+	}
+	num, err := strconv.Atoi(v)
+	if err != nil {
+		logger.Errorf("[CONFIG] %s must be int, got %s\n", envName, v)
+		os.Exit(1)
+	}
+	return num
 }
 
 func getInt16(envName string) int16 {

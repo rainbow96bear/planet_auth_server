@@ -1,8 +1,11 @@
 package oauth
 
-import pb "github.com/rainbow96bear/planet_proto"
+import (
+	"github.com/rainbow96bear/planet_auth_server/utils"
+)
 
 // 모든 플랫폼 provider가 따라야 하는 공통 인터페이스
-type Provider interface {
-	RefreshToken(token string) (*pb.RefreshTokenResponse, error)
+type OauthProvider interface {
+	utils.Provider
+	// RotateRefreshToken(token string) (*pb.RefreshTokenResponse, error)
 }

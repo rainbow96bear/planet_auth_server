@@ -7,56 +7,70 @@ import (
 	"github.com/rainbow96bear/planet_db_server/logger"
 	pb "github.com/rainbow96bear/planet_proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-func NewDBClient(addr string) pb.UserServiceClient {
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+type DBClient struct {
+	conn   *grpc.ClientConn
+	client pb.UserServiceClient
+}
+
+func NewDBClient(addr string) (*DBClient, error) {
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Errorf("grpc server did not connect: %v", err)
+		return nil, err
 	}
-	return pb.NewUserServiceClient(conn)
+	return &DBClient{
+		conn:   conn,
+		client: pb.NewUserServiceClient(conn),
+	}, nil
 }
 
-func ReqOauthSignUp(client pb.UserServiceClient, userInfo *pb.UserInfo) (*pb.SignUpResponse, error) {
+func (d *DBClient) ReqGetUserInfoByPlatformInfo(platform *pb.PlatformInfo) (*pb.UserInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-
-	if res, err := client.OauthSignUp(ctx, userInfo); err != nil {
-		return nil, err
-	} else {
-		return res, nil
-	}
+	return d.client.GetUserInfoByPlatformInfo(ctx, platform)
 }
 
-func ReqRefreshToken(client pb.UserServiceClient, token *pb.Token) (*pb.RefreshTokenResponse, error) {
+func (d *DBClient) ReqOauthSignUp(userInfo *pb.UserInfo) (*pb.SignUpResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-
-	if res, err := client.RefreshToken(ctx, token); err != nil {
-		return nil, err
-	} else {
-		return res, nil
-	}
+	return d.client.OauthSignUp(ctx, userInfo)
 }
 
-func ReqGetRefreshTokenInfo(client pb.UserServiceClient, token *pb.Token) (*pb.Token, error) {
+func (d *DBClient) ReqUpdateRefreshToken(token *pb.Token) (*pb.Token, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-
-	if res, err := client.GetRefreshTokenInfo(ctx, token); err != nil {
-		return nil, err
-	} else {
-		return res, nil
-	}
+	return d.client.UpdateRefreshToken(ctx, token)
 }
 
-func ReqDeleteRefreshToken(client pb.UserServiceClient, token *pb.Token) (*pb.TokenResponse, error) {
+func (d *DBClient) ReqGetRefreshTokenInfo(token *pb.Token) (*pb.Token, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+	return d.client.GetRefreshTokenInfo(ctx, token)
+}
 
-	if res, err := client.DeleteRefreshToken(ctx, token); err != nil {
-		return nil, err
-	} else {
-		return res, nil
-	}
+func (d *DBClient) ReqDeleteRefreshToken(token *pb.Token) (*pb.TokenResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return d.client.DeleteRefreshToken(ctx, token)
+}
+
+func (d *DBClient) ReqSaveOauthSession(oauthSession *pb.OauthSession) (*pb.SaveOauthSessionResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return d.client.SaveOauthSession(ctx, oauthSession)
+}
+
+func (d *DBClient) ReqGetPlatformInfoBySession(oauthSession *pb.GetOauthSessionRequest) (*pb.PlatformInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return d.client.GetPlatformInfoBySession(ctx, oauthSession)
+}
+
+func (d *DBClient) ReqCheckNicknameAvailable(nickname *pb.CheckNicknameRequest) (*pb.CheckNicknameResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return d.client.CheckNicknameAvailable(ctx, nickname)
 }
