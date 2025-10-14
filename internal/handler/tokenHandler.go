@@ -20,10 +20,7 @@ func (h *TokenHandler) IssueAccessToken(c *gin.Context) {
 		return
 	}
 
-	// db에 refresh token으로 정보 조회
-	// 사용자 uuid 얻기
-
-	accessToken, err := h.TokenService.IssueAccessToken(userUuid)
+	accessToken, err := h.TokenService.IssueAccessToken(refreshToken)
 	if err != nil {
 		logger.Warnf("fail to create access token ERR[%s]", err.Error())
 		return
@@ -55,17 +52,18 @@ func (h *TokenHandler) IssueRefreshToken(c *gin.Context) {
 		return
 	}
 
-	// db에 refresh token으로 user uuid 얻기
-
-	accessToken, err := h.TokenService.IssueAccessToken(userUuid)
+	accessToken, err := h.TokenService.IssueAccessToken(refreshToken)
 	if err != nil {
 		logger.Warnf("fail to create access token ERROR : %s", err.Error())
 		return
 	}
 
-	refreshToken := h.TokenService.IssueRefreshToken()
-	// db에 refresh token 올리기
-
+	refreshToken, err := h.TokenService.IssueRefreshToken()
+	if err != nil {
+		logger.Warnf("no refresh_token cookie found")
+		return
+	}
+	
 	c.SetCookie(
 		h.TokenService.RefreshTokenName,
 		refreshToken,

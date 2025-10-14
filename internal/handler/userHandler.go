@@ -21,10 +21,6 @@ func (h *UserHandler) Signup(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing session"})
 		return
 	}
-	
-    // db에서 cookie의 session 정보로 user uuid 얻기
-
-
 
     var req dto.SignupRequest
 	if err := c.ShouldBind(&req); err != nil {
@@ -33,9 +29,7 @@ func (h *UserHandler) Signup(c *gin.Context) {
 		return
 	}
 	logger.Debugf("bind req : %+v", req)
-
-	// 사용자 uuid 만들기
-	newUserUuid := utils.GenerateUserUUID()
+	
 	file, err := c.FormFile("profile_image")
 	var imageURL string
 	if err == nil {
@@ -53,19 +47,9 @@ func (h *UserHandler) Signup(c *gin.Context) {
 		imageURL = fmt.Sprintf("%s/%s/default", config.PLANET_CLIENT_ADDR, h.UserService.ProfileImgSavePath)
 	}
 
-	// newUserInfo := &pb.UserInfo{
-	// 	UserUuid:      newUserUuid,
-	// 	OauthPlatform: resPlatformInfo.GetPlatform(),
-	// 	OauthId:       resPlatformInfo.GetPlatformId(),
-	// 	Email:         req.Email,
-	// 	Nickname:      req.Nickname,
-	// 	ProfileImage:  imageURL,
-	// 	Bio:           req.Bio,
-	// }
-    
     redirectUrl := fmt.Sprintf("%s/login/callback", config.PLANET_CLIENT_ADDR)
-
-    // db에 user 정보 저장
+	// TODO : imageURL 처리
+	userInfo, err := h.UserService.Signup(oauthSessionUuid, signupInfo)
 	if err != nil {
 		logger.Warnf("failed to oauth sign up ERR[%s]", err.Error())
 		errorRedirect := fmt.Sprintf("%s?status=error&code=%s", redirectUrl, utils.ERR_DB_REQUEST)
@@ -76,9 +60,7 @@ func (h *UserHandler) Signup(c *gin.Context) {
 		return
 	}
     
-    refreshToken := h.TokenService.IssueRefreshToken()
-
-    // db에 refresh token update
+    refreshToken, err := h.TokenService.IssueRefreshToken(userInfo.UserUuid)
     if err != nil {
 		logger.Warnf("failed to refresh Token ERR[%s]", err.Error())
         errorRedirect := fmt.Sprintf("%s?status=error&code=%s", redirectUrl, utils.ERR_DB_REQUEST)
@@ -88,6 +70,7 @@ func (h *UserHandler) Signup(c *gin.Context) {
 		})
 		return
 	}
+
     c.SetCookie(
 		config.REFRESH_TOKEN_NAME,
 		refreshToken,
@@ -119,10 +102,9 @@ func (h *UserHandler) NicknameCheck(c *gin.Context) {
 		return
 	}
 
-
-    // db에 nickname 중복 검사
+	isAvailableNickname := h.Service.IsAvailableNickname(nickname)
 
     c.JSON(http.StatusOK, gin.H{
-		"available": res.Available,
+		"available": isAvailableNickname,
 	})
 }

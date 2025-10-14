@@ -44,14 +44,7 @@ func (h *KakaoHandler) Login(c *gin.Context) {
     refreshToken := h.TokenService.IssueRefreshToken(userUuid)
 
     // db에 refresh token을 사용자 uuid와 함께 저장 요청
-    result, err := db.UpdateRefreshToken(userUuid, refreshToken)
-    if err != nil {
-        logger.Errorf("update refresh token ERR[%s]", err.Error())
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		redirectUrl := fmt.Sprintf("%s/login/callback?status=error&code=%s", config.PLANET_CLIENT_ADDR, utils.ERR_REFRESH_TOKEN_CREATE)
-		c.Redirect(http.StatusFound, redirectUrl)
-        return
-    }
+
 
     c.SetCookie(
 		config.REFRESH_TOKEN_NAME,
