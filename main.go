@@ -3,16 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
 	"os"
+	"planet_utils/pkg/logger"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rainbow96bear/planet_auth_server/auth/token"
 	"github.com/rainbow96bear/planet_auth_server/config"
-	"github.com/rainbow96bear/planet_auth_server/logger"
-	"github.com/rainbow96bear/planet_auth_server/oauth/kakao"
-	"github.com/rainbow96bear/planet_auth_server/router"
-	"google.golang.org/grpc"
+	"github.com/rainbow96bear/planet_auth_server/external/oauthClient"
+	"github.com/rainbow96bear/planet_auth_server/internal/handler"
+	"github.com/rainbow96bear/planet_auth_server/internal/repository"
+	"github.com/rainbow96bear/planet_auth_server/internal/router"
+	"github.com/rainbow96bear/planet_auth_server/internal/routes"
+	"github.com/rainbow96bear/planet_auth_server/internal/service"
+	"github.com/rainbow96bear/planet_auth_server/planetInit"
 )
 
 // go build -ldflags "-X main.Mode=prod -X main.Version=1.0.0 -X main.GitCommit=$(git rev-parse HEAD)" -o user_service_prod .
@@ -40,67 +42,70 @@ func init() {
 
 func main() {
 
-	// caCert, err := os.ReadFile("ca.crt")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	db, err := planetInit.InitDB()
+	if err != nil {
+		logger.Errorf("failed to initialize database: %s", err.Error())
+		os.Exit(1)
+	}
+	defer db.Close()
 
-	// caCertPool := x509.NewCertPool()
-	// if !caCertPool.AppendCertsFromPEM(caCert) {
-	// 	logger.Errorf("failed to append CA cert")
-	// }
-
-	// 서버 인증서/개인키 로드 (self-signed or CA signed)
-	// serverCert, err := tls.LoadX509KeyPair("server.crt", "server.key")
-	// if err != nil {
-	// 	logger.Errorf("failed to load server key pair: %v", err)
-	// }
-
-	kakaoOauthProvider := &kakao.OauthProvider{
+	kakaoClient := &oauthClient.KakaoClient{
 		RestApiKey:   config.KAKAO_REST_API_KEY,
 		RedirectUrl:  config.KAKAO_REDIRECT_URI,
 		ClientSecret: config.KAKAO_CLIENT_SECRET,
 	}
 
-	authTokenProvider := &token.TokenProvider{}
+	userRepo := &repository.UserRepository{
+		DB: db,
+	}
+
+	oauthRepo := &repository.OauthSessionRepository{
+		DB: db,
+	}
+
+	refreshTokensRepo := &repository.RefreshTokensRepository{
+		DB: db,
+	}
+	// UserService 초기화
+	userService := &service.UserService{
+		ProfileImgSavePath: "/profile/image",
+		UserRepo:           userRepo,
+		OauthSessionRepo:   oauthRepo,
+	}
+
+	// TokenService 초기화 (JWT 발급용)
+	tokenService := &service.TokenService{
+		AccessTokenExpiry:  config.ACCESS_TOKEN_EXPIRY_MINUTE,
+		RefreshTokenName:   config.REFRESH_TOKEN_NAME,
+		RefreshTokenExpiry: config.REFRESH_TOKEN_EXPIRY_DURATION,
+		JwtSecretKey:       config.JWT_SECRET_KEY,
+
+		RefreshTokensRepo: refreshTokensRepo,
+	}
+
+	// KakaoHandler 생성
+	kakaoHandler := &handler.KakaoHandler{
+		KakaoClient:  kakaoClient,
+		UserService:  userService,
+		TokenService: tokenService,
+		Platform:     "kakao",
+	}
+
+	tokenHandler := &handler.TokenHandler{}
+
+	userHandler := &handler.UserHandler{
+		UserService:  userService,
+		TokenService: tokenService,
+	}
+
 	r := router.SetupRouter(
-		func(r *gin.Engine) { router.RegisterKakaoOauthRoutes(r, kakaoOauthProvider) },
-		func(r *gin.Engine) { router.RegisterTokenRoutes(r, authTokenProvider) },
-		func(r *gin.Engine) { router.RegisterSignupRoutes(r) },
-		// router.RegisterPostRoutes,
+		func(r *gin.Engine) { routes.RegisterKakaoOauthRoutes(r, kakaoHandler) },
+		func(r *gin.Engine) { routes.RegisterTokenRoutes(r, tokenHandler) },
+		func(r *gin.Engine) { routes.RegisterUserRoutes(r, userHandler) },
 	)
+
 	authServerPort := fmt.Sprintf(":%s", config.PORT)
-	// go func() {
-	// 	logger.Infof("Starting HTTPS server on %s", authServerPort)
-	// 	if err := r.RunTLS(authServerPort, "server.crt", "server.key"); err != nil {
-	// 		logger.Errorf("failed to start HTTPS server: %v", err)
-	// 	}
-	// }()
 
 	r.Run(authServerPort)
-	authServerGrpcPort := fmt.Sprintf(":%s", config.GRPC_PORT)
-	lis, err := net.Listen("tcp", authServerGrpcPort)
-	if err != nil {
-		logger.Errorf("failed to listen: %v", err)
-	}
-
-	// creds := credentials.NewTLS(&tls.Config{
-	// 	Certificates: []tls.Certificate{serverCert},
-	// 	ClientCAs:    caCertPool,
-	// 	// 개발 환경에서는 클라이언트 인증 강제하지 않음
-	// 	ClientAuth: tls.NoClientCert,
-	// })
-
-	// grpcServer := grpc.NewServer(grpc.Creds(creds))
-	grpcServer := grpc.NewServer()
-
-	// userService := service.NewUserService(map[string]utils.Provider{
-	// 	"kakao": utils.Provider(kakaoOauthProvider),
-	// })
-	// pb.RegisterUserServiceServer(grpcServer, userService)
-
-	if err := grpcServer.Serve(lis); err != nil {
-		logger.Errorf("failed to serve: %v", err)
-	}
 
 }

@@ -3,10 +3,10 @@ package config
 import (
 	"fmt"
 	"os"
+	"planet_utils/pkg/logger"
 	"strconv"
 
 	"github.com/joho/godotenv"
-	"github.com/rainbow96bear/planet_auth_server/logger"
 )
 
 func InitConfig(mode string) {
@@ -25,13 +25,12 @@ func InitConfig(mode string) {
 
 	// default config
 	PORT = getString("PORT")
-	GRPC_PORT = getString("GRPC_PORT")
 	LOG_LEVEL = getInt16("LOG_LEVEL")
-	DB_SERVER_ADDR = getString("DB_SERVER_ADDR")
-	DB_GRPC_SERVER_ADDR = getString("DB_GRPC_SERVER_ADDR")
-	ACCESS_TOKEN_EXPIRY_MINUTE = getInt16("ACCESS_TOKEN_EXPIRY_MINUTE")
+	ACCESS_TOKEN_EXPIRY_MINUTE = getInt("ACCESS_TOKEN_EXPIRY_MINUTE")
 	REFRESH_TOKEN_NAME = getString("REFRESH_TOKEN_NAME")
 	REFRESH_TOKEN_EXPIRY_DURATION = getInt("REFRESH_TOKEN_EXPIRY_DURATION")
+
+	OAUTH_SESSION_EXPIRY = getInt("OAUTH_SESSION_EXPIRY")
 
 	// kakao config
 	KAKAO_REST_API_KEY = getString("KAKAO_REST_API_KEY")
@@ -41,6 +40,12 @@ func InitConfig(mode string) {
 	// jwt key
 	JWT_SECRET_KEY = getString("JWT_SECRET_KEY")
 	PLANET_CLIENT_ADDR = getString("PLANET_CLIENT_ADDR")
+
+	DB_USER = getString("DB_USER")
+	DB_PASSWORD = getString("DB_PASSWORD")
+	DB_HOST = getString("DB_HOST")
+	DB_PORT = getString("DB_PORT")
+	DB_NAME = getString("DB_NAME")
 }
 
 func getString(envName string) string {
@@ -78,4 +83,20 @@ func getInt16(envName string) int16 {
 		os.Exit(1)
 	}
 	return int16(num)
+}
+
+func getUint64(envName string) uint64 {
+	v := os.Getenv(envName)
+	if v == "" {
+		logger.Errorf("[CONFIG] %s not set\n", envName)
+		os.Exit(1)
+	}
+
+	num, err := strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		logger.Errorf("[CONFIG] %s must be a valid uint64, got %s\n", envName, v)
+		os.Exit(1)
+	}
+
+	return num
 }

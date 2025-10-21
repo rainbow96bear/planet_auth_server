@@ -1,21 +1,91 @@
 package repository
 
 import (
-    "database/sql"
-    "your_module_name/internal/model"
+	"context"
+	"database/sql"
+	"fmt"
+	"planet_utils/model"
+	"planet_utils/pkg/logger"
+
+	"github.com/rainbow96bear/planet_auth_server/dto"
 )
 
 type UserRepository struct {
-    DB *sql.DB
+	DB *sql.DB
 }
 
-func (r *UserRepository) GetOauthSessionInfo(oauthSessionUuid string) (*model.PlatformInfo, error) {
-    _, err := r.DB.Exec("INSERT INTO users (id, nickname, email) VALUES (?, ?, ?)", user.ID, user.Nickname, user.Email)
-    return err
+func (r *UserRepository) Signup(ctx context.Context, userInfo *model.User) (string, error) {
+	logger.Infof("start signup process for nickname: %s", userInfo.Nickname)
+	defer logger.Infof("end signup process for nickname: %s", userInfo.Nickname)
+
+	query := `
+		INSERT INTO users (user_uuid, oauth_platform, oauth_id, email, nickname, profile_image, bio)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		userInfo.UserUuid,
+		userInfo.OAuthPlatform,
+		userInfo.OAuthID,
+		userInfo.Email,
+		userInfo.Nickname,
+		userInfo.ProfileImage,
+		userInfo.Bio,
+	)
+
+	if err != nil {
+		logger.Errorf("failed to insert user ERR[%s]", err.Error())
+		return "", fmt.Errorf("failed to insert user: %w", err)
+	}
+
+	logger.Infof("successfully inserted user: %s", userInfo.UserUuid)
+	return userInfo.UserUuid, nil
 }
 
-func (r *UserRepository) IsAvailableNickname(nickname string) bool {
-    var count int
-    r.DB.QueryRow("SELECT COUNT(*) FROM users WHERE nickname = ?", nickname).Scan(&count)
-    return count > 0
+func (r *UserRepository) IsAvailableNickname(ctx context.Context, nickname string) (bool, error) {
+	logger.Infof("start to checking if nickname is available: %s", nickname)
+	defer logger.Infof("end to checking nickname: %s", nickname)
+
+	query := `SELECT COUNT(*) FROM users WHERE nickname = ?`
+	var count int
+
+	err := r.DB.QueryRowContext(ctx, query, nickname).Scan(&count)
+	if err != nil {
+		logger.Errorf("failed to check nickname availability ERR[%s]", err.Error())
+		return false, err
+	}
+
+	available := count == 0
+	if available {
+		logger.Debugf("nickname '%s' is available", nickname)
+	} else {
+		logger.Debugf("nickname '%s' is already taken", nickname)
+	}
+
+	return available, nil
+}
+
+func (r *UserRepository) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (bool, error) {
+	logger.Infof("start to get user uuid")
+	defer logger.Infof("end to get user uuid")
+
+	query := `
+        SELECT user_uuid
+        FROM users
+        WHERE oauth_platform = ? and oauth_id = ?;
+    `
+
+	var userUuid string
+	err := r.DB.QueryRowContext(ctx, query, oauthUserInfo.OauthPlatform, oauthUserInfo.OauthId).Scan(&userUuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			logger.Debugf("user not found: %+v", oauthUserInfo)
+			return false, nil // 조회 결과 없으면 사용 가능
+		}
+		logger.Errorf("failed to get user uuid ERR[%s]", err.Error())
+		return false, err
+	}
+
+	logger.Debugf("successfully got user uuid: %s", userUuid)
+	return true, nil // 조회 결과 있으면 이미 존재
 }

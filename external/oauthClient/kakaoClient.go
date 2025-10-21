@@ -1,9 +1,10 @@
 package oauthClient
 
 import (
-    "fmt"
-    "net/http"
-    "net/url"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"planet_utils/pkg/logger"
 )
 
 type KakaoClient struct {
@@ -13,7 +14,7 @@ type KakaoClient struct {
 }
 
 func (c *KakaoClient) GetAccessToken(code string) (string, error) {
-    logger.Infof("start to get access token")
+	logger.Infof("start to get access token")
 	defer logger.Infof("end to get access token")
 	accessTokenUrl := fmt.Sprintf(
 		"https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=%s&redirect_uri=%s&code=%s&client_secret=%s",
@@ -25,20 +26,20 @@ func (c *KakaoClient) GetAccessToken(code string) (string, error) {
 
 	resp, err := http.Post(accessTokenUrl, "application/x-www-form-urlencoded", nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	var tokenResp KakaoTokenResponse
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return nil err
+		return "", err
 	}
 	logger.Debugf("access token result : %+v", tokenResp)
 
 	return tokenResp.AccessToken, nil
 }
 
-func (c *KakaoClient) GetUserInfo(accessToken string) (KakaoUserInfo, error){
+func (c *KakaoClient) GetUserInfo(accessToken string) (*KakaoUser, error) {
 	logger.Infof("start to get user info")
 	defer logger.Infof("end to get user info")
 	req, err := http.NewRequest(
@@ -60,7 +61,7 @@ func (c *KakaoClient) GetUserInfo(accessToken string) (KakaoUserInfo, error){
 	}
 	defer userInfoResp.Body.Close()
 
-	var userInfoResult KakaoUser
+	var userInfoResult *KakaoUser
 	if err := json.NewDecoder(userInfoResp.Body).Decode(&userInfoResult); err != nil {
 		return nil, err
 	}

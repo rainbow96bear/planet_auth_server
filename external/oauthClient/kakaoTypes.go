@@ -1,15 +1,6 @@
-package kakao
+package oauthClient
 
-import (
-	"time"
-)
-
-type OauthProvider struct {
-	RestApiKey   string
-	RedirectUrl  string
-	ClientSecret string
-	AccessToken  map[string]string
-}
+import "time"
 
 type KakaoTokenResponse struct {
 	AccessToken  string  `json:"access_token"`
