@@ -14,7 +14,7 @@ import (
 	"github.com/rainbow96bear/planet_auth_server/internal/router"
 	"github.com/rainbow96bear/planet_auth_server/internal/routes"
 	"github.com/rainbow96bear/planet_auth_server/internal/service"
-	"github.com/rainbow96bear/planet_auth_server/planetInit"
+	"github.com/rainbow96bear/planet_auth_server/authInit"
 )
 
 // go build -ldflags "-X main.Mode=prod -X main.Version=1.0.0 -X main.GitCommit=$(git rev-parse HEAD)" -o user_service_prod .
@@ -42,7 +42,7 @@ func init() {
 
 func main() {
 
-	db, err := planetInit.InitDB()
+	db, err := authInit.InitDB()
 	if err != nil {
 		logger.Errorf("failed to initialize database: %s", err.Error())
 		os.Exit(1)
@@ -55,11 +55,11 @@ func main() {
 		ClientSecret: config.KAKAO_CLIENT_SECRET,
 	}
 
-	userRepo := &repository.UserRepository{
+	userRepo := &repository.UsersRepository{
 		DB: db,
 	}
 
-	oauthRepo := &repository.OauthSessionRepository{
+	oauthRepo := &repository.OauthSessionsRepository{
 		DB: db,
 	}
 

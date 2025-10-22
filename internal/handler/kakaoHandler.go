@@ -112,6 +112,7 @@ func (h *KakaoHandler) Logout(c *gin.Context) {
 
 	err = h.TokenService.RevokeRefreshToken(ctx, refreshToken)
 	if err != nil {
+		logger.Warnf("fail to revoke refresh token : %s", refreshToken)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "fail to revoke refresh token"})
 		return
 	}

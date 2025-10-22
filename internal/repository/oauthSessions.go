@@ -10,11 +10,11 @@ import (
 	"github.com/rainbow96bear/planet_auth_server/dto"
 )
 
-type OauthSessionRepository struct {
+type OauthSessionsRepository struct {
 	DB *sql.DB
 }
 
-func (r *OauthSessionRepository) GetOauthInfoBySessionUuid(ctx context.Context, oauthSessionUuid string) (*dto.OauthUserInfo, error) {
+func (r *OauthSessionsRepository) GetOauthInfoBySessionUuid(ctx context.Context, oauthSessionUuid string) (*dto.OauthUserInfo, error) {
 	logger.Infof("start to get oauth session info by session uuid")
 	defer logger.Infof("end to get oauth session info by session uuid")
 
@@ -39,7 +39,7 @@ func (r *OauthSessionRepository) GetOauthInfoBySessionUuid(ctx context.Context, 
 	return &oauthUserInfo, nil
 }
 
-func (r *OauthSessionRepository) CreateOauthSession(ctx context.Context, oauthSession *model.OAuthSession) (*model.OAuthSession, error) {
+func (r *OauthSessionsRepository) CreateOauthSession(ctx context.Context, oauthSession *model.OAuthSession) (*model.OAuthSession, error) {
 	logger.Infof("start to create oauth session: %+v", oauthSession)
 	defer logger.Infof("end to create oauth session")
 

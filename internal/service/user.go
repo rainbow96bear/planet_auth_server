@@ -17,8 +17,8 @@ type UserService struct {
 	// AccessTokenExpiry
 	// JwtSecretKey string
 	ProfileImgSavePath string
-	UserRepo           *repository.UserRepository
-	OauthSessionRepo   *repository.OauthSessionRepository
+	UserRepo           *repository.UsersRepository
+	OauthSessionRepo   *repository.OauthSessionsRepository
 }
 
 func (s *UserService) Signup(ctx context.Context, oauthSessionUuid string, signupInfo *dto.SignupInfo) (string, error) {

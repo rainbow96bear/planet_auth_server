@@ -10,11 +10,11 @@ import (
 	"github.com/rainbow96bear/planet_auth_server/dto"
 )
 
-type UserRepository struct {
+type UsersRepository struct {
 	DB *sql.DB
 }
 
-func (r *UserRepository) Signup(ctx context.Context, userInfo *model.User) (string, error) {
+func (r *UsersRepository) Signup(ctx context.Context, userInfo *model.User) (string, error) {
 	logger.Infof("start signup process for nickname: %s", userInfo.Nickname)
 	defer logger.Infof("end signup process for nickname: %s", userInfo.Nickname)
 
@@ -42,7 +42,7 @@ func (r *UserRepository) Signup(ctx context.Context, userInfo *model.User) (stri
 	return userInfo.UserUuid, nil
 }
 
-func (r *UserRepository) IsAvailableNickname(ctx context.Context, nickname string) (bool, error) {
+func (r *UsersRepository) IsAvailableNickname(ctx context.Context, nickname string) (bool, error) {
 	logger.Infof("start to checking if nickname is available: %s", nickname)
 	defer logger.Infof("end to checking nickname: %s", nickname)
 
@@ -65,7 +65,7 @@ func (r *UserRepository) IsAvailableNickname(ctx context.Context, nickname strin
 	return available, nil
 }
 
-func (r *UserRepository) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (bool, error) {
+func (r *UsersRepository) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (bool, error) {
 	logger.Infof("start to get user uuid")
 	defer logger.Infof("end to get user uuid")
 
