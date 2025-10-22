@@ -22,7 +22,6 @@ func (h *TokenHandler) IssueAccessToken(c *gin.Context) {
 		logger.Warnf("no %s cookie found", config.REFRESH_TOKEN_NAME)
 		return
 	}
-
 	accessToken, err := h.TokenService.IssueAccessToken(ctx, refreshToken)
 	if err != nil {
 		logger.Warnf("fail to create access token ERR[%s]", err.Error())

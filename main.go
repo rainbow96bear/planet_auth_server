@@ -7,6 +7,7 @@ import (
 	"planet_utils/pkg/logger"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rainbow96bear/planet_auth_server/authInit"
 	"github.com/rainbow96bear/planet_auth_server/config"
 	"github.com/rainbow96bear/planet_auth_server/external/oauthClient"
 	"github.com/rainbow96bear/planet_auth_server/internal/handler"
@@ -14,7 +15,6 @@ import (
 	"github.com/rainbow96bear/planet_auth_server/internal/router"
 	"github.com/rainbow96bear/planet_auth_server/internal/routes"
 	"github.com/rainbow96bear/planet_auth_server/internal/service"
-	"github.com/rainbow96bear/planet_auth_server/authInit"
 )
 
 // go build -ldflags "-X main.Mode=prod -X main.Version=1.0.0 -X main.GitCommit=$(git rev-parse HEAD)" -o user_service_prod .
@@ -91,7 +91,9 @@ func main() {
 		Platform:     "kakao",
 	}
 
-	tokenHandler := &handler.TokenHandler{}
+	tokenHandler := &handler.TokenHandler{
+		TokenService: tokenService,
+	}
 
 	userHandler := &handler.UserHandler{
 		UserService:  userService,

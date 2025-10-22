@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"planet_utils/model"
+	"planet_utils/pkg/logger"
 	"time"
 
 	"github.com/rainbow96bear/planet_auth_server/config"
 	"github.com/rainbow96bear/planet_auth_server/dto"
 	"github.com/rainbow96bear/planet_auth_server/internal/repository"
 	"github.com/rainbow96bear/planet_auth_server/utils"
-	"github.com/rainbow96bear/planet_user_server/logger"
 )
 
 type UserService struct {
@@ -55,13 +55,13 @@ func (s *UserService) IsAvailableNickname(ctx context.Context, nickname string) 
 	return isAvailableNickname, nil
 }
 
-func (s *UserService) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (bool, error) {
-	isUserExists, err := s.UserRepo.IsUserExists(ctx, oauthUserInfo)
+func (s *UserService) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (string, error) {
+	userUuid, err := s.UserRepo.IsUserExists(ctx, oauthUserInfo)
 	if err != nil {
-		return false, errors.New("fail to check oauth user info")
+		return "", errors.New("fail to check oauth user info")
 	}
-	logger.Debugf("isUserExists : %v", isUserExists)
-	return isUserExists, nil
+	logger.Debugf("isUserExists user uuid : %s", userUuid)
+	return userUuid, nil
 }
 
 func (s *UserService) CreateOauthSession(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (string, error) {

@@ -65,7 +65,7 @@ func (r *UsersRepository) IsAvailableNickname(ctx context.Context, nickname stri
 	return available, nil
 }
 
-func (r *UsersRepository) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (bool, error) {
+func (r *UsersRepository) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (string, error) {
 	logger.Infof("start to get user uuid")
 	defer logger.Infof("end to get user uuid")
 
@@ -80,12 +80,12 @@ func (r *UsersRepository) IsUserExists(ctx context.Context, oauthUserInfo *dto.O
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Debugf("user not found: %+v", oauthUserInfo)
-			return false, nil // 조회 결과 없으면 사용 가능
+			return "", nil // 조회 결과 없으면 사용 가능
 		}
 		logger.Errorf("failed to get user uuid ERR[%s]", err.Error())
-		return false, err
+		return "", err
 	}
 
 	logger.Debugf("successfully got user uuid: %s", userUuid)
-	return true, nil // 조회 결과 있으면 이미 존재
+	return userUuid, nil // 조회 결과 있으면 이미 존재
 }

@@ -52,14 +52,14 @@ func (h *KakaoHandler) Login(c *gin.Context) {
 		OauthId:       userIDStr,
 	}
 
-	isUserExist, err := h.UserService.IsUserExists(ctx, oauthUserInfo)
+	userUuid, err := h.UserService.IsUserExists(ctx, oauthUserInfo)
 	if err != nil {
 		logger.Errorf("fail to check user info ERR[%s]", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	if !isUserExist {
+	if userUuid == "" {
 		oauthSession, err := h.UserService.CreateOauthSession(ctx, oauthUserInfo)
 		if err != nil {
 			logger.Warnf("failed to save oauth session: %+v", err)
@@ -83,7 +83,7 @@ func (h *KakaoHandler) Login(c *gin.Context) {
 		return
 	}
 
-	refreshToken, err := h.TokenService.IssueRefreshToken(ctx, userIDStr)
+	refreshToken, err := h.TokenService.IssueRefreshToken(ctx, userUuid)
 
 	c.SetCookie(
 		config.REFRESH_TOKEN_NAME,
