@@ -3,10 +3,10 @@ package config
 import (
 	"fmt"
 	"os"
-	"planet_utils/pkg/logger"
 	"strconv"
 
 	"github.com/joho/godotenv"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 func InitConfig(mode string) {

@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"planet_utils/pkg/logger"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +10,7 @@ import (
 	"github.com/rainbow96bear/planet_auth_server/dto"
 	"github.com/rainbow96bear/planet_auth_server/external/oauthClient"
 	"github.com/rainbow96bear/planet_auth_server/internal/service"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 type KakaoHandler struct {
@@ -18,6 +18,19 @@ type KakaoHandler struct {
 	UserService  *service.UserService
 	TokenService *service.TokenService
 	Platform     string
+}
+
+func NewKakaoHandler(userService *service.UserService, tokenService *service.TokenService) *KakaoHandler {
+	return &KakaoHandler{
+		UserService:  userService,
+		TokenService: tokenService,
+	}
+}
+
+func (h *KakaoHandler) RegisterRoutes(r *gin.Engine) {
+	oauthGroup := r.Group("/oauth/kakao")
+	oauthGroup.GET("/login", h.Login)
+	oauthGroup.POST("/logout", h.Logout)
 }
 
 func (h *KakaoHandler) Login(c *gin.Context) {

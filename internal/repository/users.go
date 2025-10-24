@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"planet_utils/model"
-	"planet_utils/pkg/logger"
 
 	"github.com/rainbow96bear/planet_auth_server/dto"
+	"github.com/rainbow96bear/planet_utils/model"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 type UsersRepository struct {

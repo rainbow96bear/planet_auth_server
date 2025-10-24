@@ -3,11 +3,11 @@ package authInit
 import (
 	"database/sql"
 	"fmt"
-	"planet_utils/pkg/logger"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/rainbow96bear/planet_auth_server/config"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 var DB *sql.DB

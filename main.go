@@ -4,17 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"planet_utils/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rainbow96bear/planet_auth_server/authInit"
 	"github.com/rainbow96bear/planet_auth_server/config"
-	"github.com/rainbow96bear/planet_auth_server/external/oauthClient"
-	"github.com/rainbow96bear/planet_auth_server/internal/handler"
-	"github.com/rainbow96bear/planet_auth_server/internal/repository"
+	"github.com/rainbow96bear/planet_auth_server/internal/bootstrap"
 	"github.com/rainbow96bear/planet_auth_server/internal/router"
-	"github.com/rainbow96bear/planet_auth_server/internal/routes"
-	"github.com/rainbow96bear/planet_auth_server/internal/service"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 // go build -ldflags "-X main.Mode=prod -X main.Version=1.0.0 -X main.GitCommit=$(git rev-parse HEAD)" -o user_service_prod .
@@ -49,62 +45,13 @@ func main() {
 	}
 	defer db.Close()
 
-	kakaoClient := &oauthClient.KakaoClient{
-		RestApiKey:   config.KAKAO_REST_API_KEY,
-		RedirectUrl:  config.KAKAO_REDIRECT_URI,
-		ClientSecret: config.KAKAO_CLIENT_SECRET,
-	}
+	handlers := bootstrap.InitHandlers(db)
 
-	userRepo := &repository.UsersRepository{
-		DB: db,
-	}
-
-	oauthRepo := &repository.OauthSessionsRepository{
-		DB: db,
-	}
-
-	refreshTokensRepo := &repository.RefreshTokensRepository{
-		DB: db,
-	}
-	// UserService 초기화
-	userService := &service.UserService{
-		ProfileImgSavePath: "/profile/image",
-		UserRepo:           userRepo,
-		OauthSessionRepo:   oauthRepo,
-	}
-
-	// TokenService 초기화 (JWT 발급용)
-	tokenService := &service.TokenService{
-		AccessTokenExpiry:  config.ACCESS_TOKEN_EXPIRY_MINUTE,
-		RefreshTokenName:   config.REFRESH_TOKEN_NAME,
-		RefreshTokenExpiry: config.REFRESH_TOKEN_EXPIRY_DURATION,
-		JwtSecretKey:       config.JWT_SECRET_KEY,
-
-		RefreshTokensRepo: refreshTokensRepo,
-	}
-
-	// KakaoHandler 생성
-	kakaoHandler := &handler.KakaoHandler{
-		KakaoClient:  kakaoClient,
-		UserService:  userService,
-		TokenService: tokenService,
-		Platform:     "kakao",
-	}
-
-	tokenHandler := &handler.TokenHandler{
-		TokenService: tokenService,
-	}
-
-	userHandler := &handler.UserHandler{
-		UserService:  userService,
-		TokenService: tokenService,
-	}
-
-	r := router.SetupRouter(
-		func(r *gin.Engine) { routes.RegisterKakaoOauthRoutes(r, kakaoHandler) },
-		func(r *gin.Engine) { routes.RegisterTokenRoutes(r, tokenHandler) },
-		func(r *gin.Engine) { routes.RegisterUserRoutes(r, userHandler) },
-	)
+	r := router.SetupRouter(func(r *gin.Engine) {
+		for _, h := range handlers {
+			h.RegisterRoutes(r)
+		}
+	})
 
 	authServerPort := fmt.Sprintf(":%s", config.PORT)
 

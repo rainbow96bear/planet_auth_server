@@ -5,11 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"planet_utils/model"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/rainbow96bear/planet_auth_server/internal/repository"
+	"github.com/rainbow96bear/planet_utils/model"
 )
 
 type TokenService struct {

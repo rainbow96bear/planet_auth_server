@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"planet_utils/pkg/logger"
+
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 type KakaoClient struct {

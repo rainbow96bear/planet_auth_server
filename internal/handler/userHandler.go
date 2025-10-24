@@ -3,18 +3,31 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"planet_utils/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rainbow96bear/planet_auth_server/config"
 	"github.com/rainbow96bear/planet_auth_server/dto"
 	"github.com/rainbow96bear/planet_auth_server/internal/service"
 	"github.com/rainbow96bear/planet_auth_server/utils"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 type UserHandler struct {
 	UserService  *service.UserService
 	TokenService *service.TokenService
+}
+
+func NewUserHandler(userService *service.UserService, tokenService *service.TokenService) *UserHandler {
+	return &UserHandler{
+		UserService:  userService,
+		TokenService: tokenService,
+	}
+}
+
+func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
+	userGroup := r.Group("/auth/user")
+	userGroup.POST("/signup", h.Signup)
+	userGroup.GET("/nickname/check", h.NicknameCheck)
 }
 
 func (h *UserHandler) Signup(c *gin.Context) {

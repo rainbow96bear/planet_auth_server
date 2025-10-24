@@ -2,15 +2,27 @@ package handler
 
 import (
 	"net/http"
-	"planet_utils/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rainbow96bear/planet_auth_server/config"
 	"github.com/rainbow96bear/planet_auth_server/internal/service"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 type TokenHandler struct {
 	TokenService *service.TokenService
+}
+
+func NewTokenHandler(tokenService *service.TokenService) *TokenHandler {
+	return &TokenHandler{
+		TokenService: tokenService,
+	}
+}
+
+func (h *TokenHandler) RegisterRoutes(r *gin.Engine) {
+	oauthGroup := r.Group("/auth/token")
+	oauthGroup.POST("/reissue/refresh", h.ReissueRefreshToken)
+	oauthGroup.POST("/issue/access", h.IssueAccessToken)
 }
 
 func (h *TokenHandler) IssueAccessToken(c *gin.Context) {

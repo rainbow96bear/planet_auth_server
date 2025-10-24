@@ -3,22 +3,22 @@ package service
 import (
 	"context"
 	"errors"
-	"planet_utils/model"
-	"planet_utils/pkg/logger"
 	"time"
 
 	"github.com/rainbow96bear/planet_auth_server/config"
 	"github.com/rainbow96bear/planet_auth_server/dto"
 	"github.com/rainbow96bear/planet_auth_server/internal/repository"
 	"github.com/rainbow96bear/planet_auth_server/utils"
+	"github.com/rainbow96bear/planet_utils/model"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 type UserService struct {
 	// AccessTokenExpiry
 	// JwtSecretKey string
 	ProfileImgSavePath string
-	UserRepo           *repository.UsersRepository
-	OauthSessionRepo   *repository.OauthSessionsRepository
+	UsersRepo          *repository.UsersRepository
+	OauthSessionsRepo  *repository.OauthSessionsRepository
 }
 
 func (s *UserService) Signup(ctx context.Context, oauthSessionUuid string, signupInfo *dto.SignupInfo) (string, error) {
@@ -26,7 +26,7 @@ func (s *UserService) Signup(ctx context.Context, oauthSessionUuid string, signu
 
 	// db에 사용자 정보 저장
 	// platformInfo와 signupInfo를 사용
-	oauthUserInfo, err := s.OauthSessionRepo.GetOauthInfoBySessionUuid(ctx, oauthSessionUuid)
+	oauthUserInfo, err := s.OauthSessionsRepo.GetOauthInfoBySessionUuid(ctx, oauthSessionUuid)
 	if err != nil {
 		return "", err
 	}
@@ -40,14 +40,14 @@ func (s *UserService) Signup(ctx context.Context, oauthSessionUuid string, signu
 		ProfileImage:  signupInfo.ProfileImgUrl,
 	}
 
-	s.UserRepo.Signup(ctx, newUser)
+	s.UsersRepo.Signup(ctx, newUser)
 
 	return newUserUuid, nil
 
 }
 
 func (s *UserService) IsAvailableNickname(ctx context.Context, nickname string) (bool, error) {
-	isAvailableNickname, err := s.UserRepo.IsAvailableNickname(ctx, nickname)
+	isAvailableNickname, err := s.UsersRepo.IsAvailableNickname(ctx, nickname)
 	if err != nil {
 		return false, errors.New("fail to check nickname")
 	}
@@ -56,7 +56,7 @@ func (s *UserService) IsAvailableNickname(ctx context.Context, nickname string) 
 }
 
 func (s *UserService) IsUserExists(ctx context.Context, oauthUserInfo *dto.OauthUserInfo) (string, error) {
-	userUuid, err := s.UserRepo.IsUserExists(ctx, oauthUserInfo)
+	userUuid, err := s.UsersRepo.IsUserExists(ctx, oauthUserInfo)
 	if err != nil {
 		return "", errors.New("fail to check oauth user info")
 	}
@@ -74,7 +74,7 @@ func (s *UserService) CreateOauthSession(ctx context.Context, oauthUserInfo *dto
 		OAuthID:       oauthUserInfo.OauthId,
 		ExpiresAt:     expiryAt,
 	}
-	_, err := s.OauthSessionRepo.CreateOauthSession(ctx, oauthSession)
+	_, err := s.OauthSessionsRepo.CreateOauthSession(ctx, oauthSession)
 	if err != nil {
 		return "", errors.New("fail to create oauth session")
 	}

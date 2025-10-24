@@ -3,8 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"planet_utils/model"
-	"planet_utils/pkg/logger"
+
+	"github.com/rainbow96bear/planet_utils/model"
+	"github.com/rainbow96bear/planet_utils/pkg/logger"
 )
 
 type RefreshTokensRepository struct {
